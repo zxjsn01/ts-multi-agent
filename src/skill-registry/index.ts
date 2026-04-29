@@ -94,7 +94,6 @@ export class SkillRegistry {
 
           // Check for duplicate names
           if (this.metadataCache.has(metadata.name)) {
-            const existing = this.metadataCache.get(metadata.name)!;
             // this.logger.warn(
             //   `Duplicate skill name "${metadata.name}" found. ` +
             //     `Existing: ${existing.skillFilePath}, New: ${skillFilePath}. ` +

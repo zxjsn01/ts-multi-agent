@@ -39,16 +39,12 @@ export class LogManager {
   private baseDir: string;
   private retentionDays: number;
   private maxFileSize: number;
-  private rotationEnabled: boolean;
-  private rotationInterval: string;
 
   constructor() {
     this.storageEnabled = LOGGING_CONFIG.storage.enabled;
     this.baseDir = LOGGING_CONFIG.storage.baseDir;
     this.retentionDays = LOGGING_CONFIG.storage.retentionDays;
     this.maxFileSize = LOGGING_CONFIG.storage.maxFileSize;
-    this.rotationEnabled = LOGGING_CONFIG.rotation.enabled;
-    this.rotationInterval = LOGGING_CONFIG.rotation.interval;
     
     if (this.storageEnabled) {
       this.ensureDirectories();

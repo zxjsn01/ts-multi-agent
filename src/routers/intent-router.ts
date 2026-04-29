@@ -653,12 +653,15 @@ ${userInput}
 
     if (result.intent === 'confirm_system') {
       const confirmOptions = systemNames.join('"、"');
+      const validQuestion = result.question && typeof result.question === 'object' && 'type' in result.question && 'content' in result.question
+        ? result.question as IntentResult['question']
+        : null;
       return {
         intent: 'confirm_system',
         confidence: result.confidence || 0.9,
         tasks: [],
-        question: result.question || {
-          type: 'system_confirm',
+        question: validQuestion || {
+          type: 'system_confirm' as const,
           content: `请问您说的是"${confirmOptions}"中的哪一个？`,
         },
       };
@@ -715,7 +718,9 @@ ${userInput}
       intent: 'skill_task',
       confidence: result.confidence || 0.8,
       tasks,
-      question: result.question,
+      question: (result.question && 'type' in result.question && 'content' in result.question)
+        ? result.question as IntentResult['question']
+        : undefined,
     };
   }
 

@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
-import type { Skill, SkillMetadata, ProfessionalSkill } from '../types';
+import type { SkillMetadata, ProfessionalSkill } from '../types';
 
 /**
  * Internal cache entry for professional skill metadata and file path
