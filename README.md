@@ -565,7 +565,7 @@ interface SkillMetadata {
 | OpenRouter | qwen/qwen3.6-plus-preview:free | 推理 + 流式 |
 | NVIDIA | minimax-m2.5 | 流式 |
 | Zhipu (智谱) | glm-4.7-flash | 推理 + 流式 |
-| SiliconFlow | MiniMax-M2.5 | 流式 |
+| SiliconFlow | Pro/moonshotai/Kimi-K2.6 | 推理 + 流式 |
 
 ### 核心方法
 

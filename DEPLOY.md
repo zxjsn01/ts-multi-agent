@@ -84,7 +84,7 @@ SILICONFLOW_API_KEY=sk-xxxxxxxx
 LLM_PROVIDER=siliconflow
 
 # 使用的模型名称
-LLM_MODEL=Pro/MiniMaxAI/MiniMax-M2.5
+LLM_MODEL=Pro/moonshotai/Kimi-K2.6
 
 # API 基础地址
 LLM_BASE_URL=https://api.siliconflow.cn/v1/

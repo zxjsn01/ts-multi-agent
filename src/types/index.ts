@@ -464,12 +464,12 @@ export const CONFIG = {
   SCRIPT_TIMEOUT_MS: parseInt(process.env.SCRIPT_TIMEOUT_MS || '180000', 10),
   /** Skill directory path */
   SKILL_DIRECTORY: './skills/',
-  /** LLM Provider: nvidia | openrouter */
-  LLM_PROVIDER: process.env.LLM_PROVIDER || 'openrouter',
+  /** LLM Provider: nvidia | openrouter | siliconflow */
+  LLM_PROVIDER: process.env.LLM_PROVIDER || 'siliconflow',
   /** LLM model name */
-  LLM_MODEL: process.env.LLM_MODEL || 'minimax/minimax-m2.5:free',
+  LLM_MODEL: process.env.LLM_MODEL || 'Pro/moonshotai/Kimi-K2.6',
   /** LLM API base URL */
-  LLM_BASE_URL: process.env.LLM_BASE_URL || 'https://openrouter.ai/api/v1',
+  LLM_BASE_URL: process.env.LLM_BASE_URL || 'https://api.siliconflow.cn/v1',
   /** LLM temperature */
   LLM_TEMPERATURE: 0.7,
   LLM_MAX_TOKENS: 4096,

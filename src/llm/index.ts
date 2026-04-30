@@ -136,7 +136,7 @@ interface GLMResponse {
   };
 }
 
-type LLMProvider = 'openrouter' | 'nvidia' | 'zhipu';
+type LLMProvider = 'openrouter' | 'nvidia' | 'zhipu' | 'siliconflow';
 
 interface ProviderCapabilities {
   supportsReasoning: boolean;
@@ -156,6 +156,11 @@ const PROVIDER_CONFIGS: Record<LLMProvider, ProviderCapabilities> = {
     reasoningField: 'reasoning_content',
   },
   zhipu: {
+    supportsReasoning: true,
+    supportsStreaming: true,
+    reasoningField: 'reasoning_content',
+  },
+  siliconflow: {
     supportsReasoning: true,
     supportsStreaming: true,
     reasoningField: 'reasoning_content',
