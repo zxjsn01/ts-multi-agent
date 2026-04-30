@@ -6,6 +6,7 @@ const { getAuthHeaders } = require(path.join(__dirname, 'token-manager'));
 
 const BASE_URL = process.env.TRAVEL_APPLY_BASE_URL || 'http://221.224.251.134:6770/api/';
 const SAVE_ENDPOINT = '/edo-reimburse/applyTravel/saveApplyTravel';
+const DETAIL_ENDPOINT = '/edo-reimburse/applyOrder/getApplyById';
 
 function safeJsonParse(str) {
   const safe = str.replace(
@@ -29,7 +30,7 @@ function post(url, data) {
     const req = http.request({
       hostname: urlObj.hostname,
       port: urlObj.port,
-      path: urlObj.pathname,
+      path: urlObj.pathname + urlObj.search,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,6 +55,11 @@ function post(url, data) {
     req.write(body);
     req.end();
   });
+}
+
+async function getDetail(id) {
+  const url = BASE_URL.replace(/\/+$/, '') + DETAIL_ENDPOINT + '?id=' + encodeURIComponent(id);
+  return post(url, {});
 }
 
 function buildPayload(formData) {
@@ -147,6 +153,31 @@ async function main() {
 
   try {
     const result = await post(BASE_URL + SAVE_ENDPOINT, payload);
+    if (result.code === 200 && result.data) {
+      try {
+        const detail = await getDetail(result.data);
+        if (detail.code === 200 && detail.data) {
+          const d = detail.data;
+          result.applyNumber = d.applyNumber || null;
+          result.orderTypeName = d.orderTypeName || null;
+          result.approvalStatusName = d.approvalStatusName || null;
+          result.applyName = d.applyName || null;
+          result.applyOrgName = d.applyOrgName || null;
+          result.applyDate = d.applyDate || null;
+          result.costOrgName = d.costOrgName || null;
+          result.enterpriseName = d.enterpriseName || null;
+          result.costCenterName = d.costCenterName || null;
+          result.costName = d.costName || null;
+          result.currencyName = d.currencyName || null;
+          result.originalCoin = d.originalCoin ?? null;
+          result.exchangeRate = d.exchangeRate ?? null;
+          result.localCurrency = d.localCurrency ?? null;
+          result.travelStartDate = d.travelStartDate || null;
+          result.travelEndDate = d.travelEndDate || null;
+          result.remark = d.remark || null;
+        }
+      } catch (_) {}
+    }
     console.log(safeJsonStringify(result));
     process.exit(result.code === 200 ? 0 : 1);
   } catch (err) {

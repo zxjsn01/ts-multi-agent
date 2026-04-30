@@ -71,6 +71,52 @@
 |--------|------|------|
 | code | int | 状态码（200成功，其他失败） |
 | msg | String | 错误信息 |
+| data | String | 保存成功后返回的记录ID（⚠️ 这是数据库主键，不是业务单号） |
+
+> ⚠️ 保存接口返回的 `data` 是记录 ID，不是申请单号。提交脚本会自动调用详情接口获取真正的业务单号 `applyNumber`。
+
+---
+
+## 1.1 查询申请单详情（保存后自动调用）
+
+**接口地址**: `POST /edo-reimburse/applyOrder/getApplyById`
+
+### 输入参数（Query Params）
+
+| 参数名 | 类型 | 必填 | 描述 |
+|--------|------|------|------|
+| id | Long | 是 | 保存接口返回的记录ID |
+
+### 输出 data 结构
+
+| 字段 | 类型 | 描述                               |
+|------|------|----------------------------------|
+| id | Long | 申请单ID                            |
+| applyNumber | String | ✅ **业务申请单号**（如 `SQ202404290001`） |
+| orderType | String | 单据类型                             |
+| orderTypeName | String | 单据类型名称                           |
+| approvalStatus | String | 审批状态编码                           |
+| approvalStatusName | String | 审批状态描述（如"待提交"、"审批中"）             |
+| costCode | String | 费用项目编码                           |
+| costName | String | 费用项目名称                           |
+| costCenterCode | String | 成本中心编码                           |
+| costCenterName | String | 成本中心名称                           |
+| costOrgCode | String | 费用占用组织编码                         |
+| costOrgName | String | 费用占用组织名称                         |
+| enterpriseCode | String | 法人公司编码                           |
+| enterpriseName | String | 法人公司名称                           |
+| remark | String | 业务描述                             |
+| currencyCode | String | 币种编码                             |
+| currencyName | String | 币种名称                             |
+| originalCoin | double | 原币金额                             |
+| exchangeRate | double | 汇率                               |
+| localCurrency | double | 本币金额                             |
+| travelStartDate | Date | 出差开始时间                           |
+| travelEndDate | Date | 出差结束时间                           |
+| applyCode | String | 申请人编码                            |
+| applyName | String | 申请人名                             |
+| applyDate | Date | 申请时间                             |
+| applyOrgName | String | 申请人所属部门名                         |
 
 ---
 

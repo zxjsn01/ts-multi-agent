@@ -445,6 +445,52 @@ node scripts/submit-travel-apply.js '{
 }'
 ```
 
+## 提交结果解析
+
+提交脚本 `submit-travel-apply.js` 在保存成功后会自动调用详情接口，返回的 JSON 中包含以下关键字段：
+
+| 字段 | 含义                         | 用途 |
+|------|----------------------------|------|
+| `data` | 保存接口返回的记录 ID（数据库主键）        | ⚠️ **这不是申请单号，不要展示为"申请单号"** |
+| `applyNumber` | 业务申请单号（如 `SQ202404290001`） | ✅ **这才是真正的申请单号，展示给用户** |
+| `approvalStatusName` | 审批状态描述（如"待提交"）             | 可选展示 |
+
+### 展示格式
+
+提交成功后，按以下格式展示结果：
+
+```
+✅ 差旅申请已成功提交！
+
+📋 基本信息
+- 申请单号：{applyNumber}
+- 单据类型：{orderTypeName}
+- 申请人：{applyName}（{applyOrgName}）
+- 申请时间：{applyDate}
+- 审批状态：{approvalStatusName}
+
+🏢 组织信息
+- 预算部门：{costOrgName}
+- 法人公司：{enterpriseName}
+- 成本中心：{costCenterName}
+- 费用项目：{costName}
+
+💰 费用信息
+- 申请金额：{localCurrency} 元（{currencyName}）
+
+✈️ 出差信息
+- 出差地点：{出差地点}
+- 出差时间：{travelStartDate} 至 {travelEndDate}
+- 出差范围：{travelRangeName}
+- 业务描述：{remark}
+```
+
+### ⚠️ 常见错误
+
+- ❌ 把 `data`（如 `2049390833540038657`）当作申请单号展示
+- ✅ 使用 `applyNumber`（如 `AP202404290001`）作为申请单号
+- 如果 `applyNumber` 为空（详情接口调用失败），则展示"申请单号获取失败，请稍后在系统中查看"，**绝对不要用 `data` 的值代替**
+
 ## 执行规则
 
 1. **按层级顺序执行**：必须先完成第N层，才能执行第N+1层
