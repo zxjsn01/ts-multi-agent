@@ -9,6 +9,60 @@ import { buildSubAgentPrompt } from '../prompts';
 import { hookManager } from '../hooks/hook-manager';
 import { HookEvent } from '../hooks/types';
 
+/**
+ * 自动将 image 数据注入到 invoice-ocr.js 脚本调用命令中
+ * 当 LLM 调用 bash 工具执行 invoice-ocr.js 时，如果参数中缺少或不完整的 image 数据，
+ * 使用 params 中的完整 image 数据替换
+ */
+function injectImageToOcrCommand(args: Record<string, unknown>, fullImageData: string): Record<string, unknown> {
+  if (!args.command || typeof args.command !== 'string') {
+    return args;
+  }
+
+  const command = args.command as string;
+
+  // 检查是否调用 invoice-ocr.js
+  if (!command.includes('invoice-ocr.js')) {
+    return args;
+  }
+
+  // 尝试从命令中提取 JSON 参数
+  const jsonMatch = command.match(/invoice-ocr\.js\s+['"](.+?)['"]\s*$/);
+  if (!jsonMatch) {
+    return args;
+  }
+
+  try {
+    const jsonStr = jsonMatch[1];
+    // 处理可能的转义
+    const unescapedJson = jsonStr.replace(/\\'/g, "'").replace(/\\"/g, '"');
+    const ocrParams = JSON.parse(unescapedJson);
+
+    // 如果参数中没有 image 字段，或者 image 字段不完整（不是以 data: 开头或长度明显不足），注入完整数据
+    if (!ocrParams.image || !ocrParams.image.startsWith('data:') || ocrParams.image.length < fullImageData.length * 0.8) {
+      ocrParams.image = fullImageData;
+      // 重新构建命令，使用双引号包裹 JSON
+      const newJsonStr = JSON.stringify(ocrParams);
+      const newCommand = command.replace(jsonMatch[1], newJsonStr);
+      return { ...args, command: newCommand };
+    }
+  } catch {
+    // JSON 解析失败，尝试直接替换命令中的 image 值
+    const imagePattern = /"image"\s*:\s*"([^"]*?)"/;
+    const imageMatch = command.match(imagePattern);
+    if (imageMatch) {
+      const existingImage = imageMatch[1];
+      // 如果现有的 image 值不完整，替换为完整数据
+      if (!existingImage.startsWith('data:') || existingImage.length < fullImageData.length * 0.8) {
+        const newCommand = command.replace(imageMatch[0], `"image":"${fullImageData}"`);
+        return { ...args, command: newCommand };
+      }
+    }
+  }
+
+  return args;
+}
+
 // P0-1: 默认安全工具白名单（仅包含 ToolRegistry 中实际注册的只读工具）
 const DEFAULT_SAFE_TOOLS = new Set([
   'conversation-get',
@@ -317,8 +371,15 @@ export class SubAgent {
       tools,
       async (toolCall) => {
         const toolStartTime = Date.now();
+
+        // 处理工具参数：如果包含 invoice-ocr.js 调用且 params 中有 image 数据，自动注入
+        let processedArguments = toolCall.arguments;
+        if (toolCall.name === 'bash' && params?.image && typeof params.image === 'string') {
+          processedArguments = injectImageToOcrCommand(processedArguments, params.image as string);
+        }
+
         console.log(`[SubAgent] 🔧 调用工具: ${toolCall.name} (开始于 ${new Date().toISOString()})`);
-        console.log(`[SubAgent] 📥 工具参数: ${JSON.stringify(toolCall.arguments)}`);
+        console.log(`[SubAgent] 📥 工具参数: ${JSON.stringify(processedArguments)}`);
 
         // 触发工具调用前钩子
         await hookManager.emit(HookEvent.BEFORE_TOOL_CALL, {
@@ -326,13 +387,13 @@ export class SubAgent {
           toolName: toolCall.name,
           userId: userId || 'sub-agent',
           sessionId: sessionId || 'skill-execution',
-          data: { arguments: toolCall.arguments }
+          data: { arguments: processedArguments }
         });
 
         try {
           const toolResult = await this.toolRegistry.execute(
             toolCall.name,
-            toolCall.arguments,
+            processedArguments,
             toolContext
           );
 

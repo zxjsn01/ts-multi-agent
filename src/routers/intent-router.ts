@@ -366,7 +366,27 @@ export class IntentRouter {
    * 3. 高置信度 → 快速返回
    * 4. 低置信度 → LLM 综合判断
    */
-  async classify(userInput: string, userProfile?: UserProfile, recentHistory?: Array<{ role?: string; content?: string; skill?: string; system?: string }>, sessionId?: string): Promise<IntentResult> {
+  async classify(userInput: string, userProfile?: UserProfile, recentHistory?: Array<{ role?: string; content?: string; skill?: string; system?: string }>, sessionId?: string, system?: string): Promise<IntentResult> {
+    // Step 0: system 字段强制路由（最高优先级）
+    if (system) {
+      const forcedSkill = this.findSkillBySystemCode(system);
+      if (forcedSkill) {
+        console.log(`[IntentRouter] 🎯 system 字段强制路由: ${system} → ${forcedSkill}`);
+        return {
+          intent: 'skill_task',
+          confidence: 1.0,
+          tasks: [
+            {
+              requirement: userInput,
+              skillName: forcedSkill,
+              intent: 'skill_task',
+            },
+          ],
+        };
+      }
+      console.log(`[IntentRouter] ⚠️ system 字段未匹配到技能: ${system}`);
+    }
+
     // Step 1: 收集所有信号
     const signals = this.collectSignals(userInput, userProfile, recentHistory, sessionId);
 
@@ -800,6 +820,21 @@ ${userInput}
       const lowerSystem = system.toLowerCase();
       if (lowerSystem.includes(lowerInput) || lowerInput.includes(lowerSystem)) {
         return system;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 根据 systemCode 查找对应的技能名称
+   * 扫描所有技能的 metadata.systemCode 字段
+   */
+  private findSkillBySystemCode(systemCode: string): string | null {
+    const skills = this.skillRegistry.getAllMetadata();
+    for (const skill of skills) {
+      const code = skill.metadata?.systemCode as string | undefined;
+      if (code && code.toLowerCase() === systemCode.toLowerCase()) {
+        return skill.name;
       }
     }
     return null;

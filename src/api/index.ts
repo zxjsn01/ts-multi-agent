@@ -27,6 +27,7 @@ interface SubmitTaskRequest {
   userId?: string; // 可选，默认 'default'
   sessionId?: string; // 可选，默认使用 userId
   accessToken?: string; // 可选，透传给技能脚本的认证 token
+  system?: string; // 可选，强制路由到指定系统的技能
 }
 
 /**
@@ -303,18 +304,18 @@ app.post(
     return RequestContext.run({ accessToken }, async () => {
     let imageAttachment: ImageAttachment | undefined;
 
-    // 检查 JSON body 中的 base64 图片
+    // 检查 JSON body 中的 base64 附件（支持图片、PDF、OFD 等格式）
     if (req.body.image && typeof req.body.image === 'string' && req.body.image.length > 100) {
-      const match = req.body.image.match(/^data:image\/(\w+);base64,(.+)$/);
+      const match = req.body.image.match(/^data:([^;]+);base64,(.+)$/);
       if (match) {
-        const mimeType = `image/${match[1] === 'jpeg' ? 'jpeg' : match[1]}`;
+        const mimeType = match[1];
         const buffer = Buffer.from(match[2], 'base64');
         imageAttachment = {
           data: buffer,
           mimeType: mimeType,
-          originalName: 'uploaded-image',
+          originalName: 'uploaded-attachment',
         };
-        console.log('[API] 解析图片成功, 大小:', buffer.length);
+        console.log('[API] 解析附件成功, MIME类型:', mimeType, '大小:', buffer.length);
       }
     }
 
@@ -381,7 +382,9 @@ app.post(
 try {
       const sessionId = req.body.sessionId as string | undefined;
 
-      const result = await mainAgent.processRequirement(requirement, imageAttachment, userId, sessionId || userId);
+      const system = req.body.system as string | undefined;
+      const imageBase64 = req.body.image as string | undefined;
+      const result = await mainAgent.processRequirement(requirement, imageAttachment, userId, sessionId || userId, system, imageBase64);
 
         // Send final reasoning summary if any
         if (reasoningBuffer.length > 0) {

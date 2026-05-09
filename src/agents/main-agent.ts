@@ -63,6 +63,8 @@ export class MainAgent {
     imageAttachment?: { data: Buffer; mimeType: string; originalName?: string },
     userId: string = `user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     sessionId?: string,
+    system?: string,
+    imageBase64?: string,
     options?: { planMode?: boolean },
   ): Promise<TaskResult> {
     const effectiveSessionId = sessionId || userId;
@@ -113,7 +115,7 @@ export class MainAgent {
 
         case 'new_request':
           // 新请求，走正常流程
-          return this.processNormalRequirement(requirement, userId, effectiveSessionId, handleResult.request, imageAttachment, options);
+          return this.processNormalRequirement(requirement, userId, effectiveSessionId, handleResult.request, imageAttachment, system, imageBase64, options);
 
         default:
           return {
@@ -269,7 +271,7 @@ export class MainAgent {
     // 将回答作为上下文追加到需求中
     console.log(`[MainAgent] 💬 主智能体询问已回答，重新识别意图: "${question.content.substring(0, 40)}..." → "${question.answer}"`);
     const enrichedRequirement = `之前的对话：\n问：${question.content}\n答：${question.answer}\n\n现在请继续处理：${request.content}`;
-    return this.processNormalRequirement(enrichedRequirement, userId, sessionId, request, undefined);
+    return this.processNormalRequirement(enrichedRequirement, userId, sessionId, request, undefined, undefined);
   }
 
   /**
@@ -489,6 +491,8 @@ export class MainAgent {
     sessionId: string,
     request: Request,
     _imageAttachment?: { data: Buffer; mimeType: string; originalName?: string },
+    system?: string,
+    imageBase64?: string,
     options?: { planMode?: boolean }
   ): Promise<TaskResult> {
     let assistantResponse = '';
@@ -548,7 +552,7 @@ export class MainAgent {
       });
 
       const intentResult = await this.intentRouter.classify(
-        requirement, userProfile, memory.conversationHistory, sessionId,
+        requirement, userProfile, memory.conversationHistory, sessionId, system,
       );
 
       await hookManager.emit(HookEvent.AFTER_INTENT_CLASSIFY, {
@@ -604,7 +608,7 @@ export class MainAgent {
             id: `task-${idx + 1}`,
             requirement: t.requirement,
             skillName: t.skillName!,
-            params: t.params,
+            params: imageBase64 ? { ...t.params, image: imageBase64 } : t.params,
             dependencies: [],
           })),
         };
@@ -619,6 +623,13 @@ export class MainAgent {
           };
         }
         plan = planResult.plan;
+        // 多任务场景下，将 imageBase64 注入到每个任务的 params 中
+        if (imageBase64 && plan.tasks) {
+          for (const task of plan.tasks) {
+            task.params = task.params || {};
+            task.params.image = imageBase64;
+          }
+        }
       }
 
       console.log(`[MainAgent] ✅ 规划完成 - 共 ${plan.tasks.length} 个任务`);
@@ -1016,7 +1027,7 @@ ${resultsContext}
         tempVariables: new Map(),
       } as any);
       console.log(`[MainAgent] 🔄 检测到用户回复与当前任务无关，重新识别意图`);
-      return this.processNormalRequirement(request.content, userId, sessionId, request, undefined);
+      return this.processNormalRequirement(request.content, userId, sessionId, request, undefined, undefined);
     }
 
     // 正常完成 → 更新请求中的任务状态

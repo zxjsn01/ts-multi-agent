@@ -109,7 +109,15 @@ export function buildSubAgentPrompt(
 
   if (mergedParams && Object.keys(mergedParams).length > 0) {
     const paramsList = Object.entries(mergedParams)
-      .map(([key, value]) => `- **${key}**: ${value}`)
+      .map(([key, value]) => {
+        // 对 Base64 附件数据进行截断展示，避免 prompt 过大
+        if (key === 'image' && typeof value === 'string' && value.length > 500 && value.startsWith('data:')) {
+          const mimeMatch = value.match(/^data:([^;]+);/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'unknown';
+          return `- **${key}**: [用户上传的附件，类型: ${mimeType}, 大小: ${value.length}字符，调用脚本时系统会自动注入完整数据]`;
+        }
+        return `- **${key}**: ${value}`;
+      })
       .join('\n');
     dynamicParts.push(`## 已获取参数\n以下参数已从用户对话中获取，请直接使用，不要重复询问：\n${paramsList}`);
   }
